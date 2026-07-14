@@ -6,6 +6,15 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { InfoIcon } from "@phosphor-icons/react";
+
 const AccordPage = () => {
   const faqData = [
     {
@@ -40,7 +49,7 @@ const AccordPage = () => {
   ];
 
   return (
-    <div className="flex justify-center items-center">
+    <div className="flex justify-center items-center flex-col gap-6">
       <main className="w-125 p-4">
         {faqData.map((faq) => {
           return (
@@ -53,6 +62,17 @@ const AccordPage = () => {
           );
         })}
       </main>
+
+      <Alert>
+        <InfoIcon />
+        <AlertTitle>Heads up!</AlertTitle>
+        <AlertDescription>
+          You can add components and dependencies to your app using the cli.
+        </AlertDescription>
+        <AlertAction>
+          <Button variant="outline">Enable</Button>
+        </AlertAction>
+      </Alert>
     </div>
   );
 };
