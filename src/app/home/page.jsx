@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import React from "react";
 
 const HomePage = () => {
@@ -7,6 +8,7 @@ const HomePage = () => {
       <button className="btn px-4 py-2 bg-blue-500 rounded cursor-pointer hover:bg-blue-700">
         Text Button
       </button>
+      <Button variant="destructive">Shadcn button</Button>
     </main>
   );
 };
