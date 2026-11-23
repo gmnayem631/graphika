@@ -21,7 +21,10 @@ User accounts, saved graphs, server-side processing, LLM / natural-language feat
 ## Architecture
 - UI: Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4 + shadcn/ui (base-ui flavour).
   Next 16 docs are bundled in `node_modules/next/dist/docs` — check them, APIs differ from older versions.
-- Parsing & column typing live in **TypeScript** (`src/lib/data/`), unit-tested with Vitest.
+- Parsing & column typing live in **TypeScript** (`src/lib/data/`), unit-tested with Vitest. Entry point:
+  `openFile()` (type/encoding sniffing, friendly `DataFileError`s) then `toTable(opened, options)`.
+- SheetJS is **vendored** (`vendor/xlsx-0.20.3.tgz`, from cdn.sheetjs.com): the npm-registry `xlsx` is
+  outdated/vulnerable and npm 12 blocks remote tarball deps. Upgrade by replacing the tarball.
 - Charts are rendered by **matplotlib in Pyodide inside a Web Worker** (`src/workers/`). The UI must stay
   responsive while Pyodide loads/renders; show clear loading progress.
 - The worker must be a **module** worker (Pyodide 314+ refuses classic workers, and Turbopack bundles

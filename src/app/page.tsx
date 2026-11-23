@@ -1,4 +1,4 @@
-import { PocDemo } from "@/components/poc/PocDemo";
+import { GraphikaApp } from "@/components/GraphikaApp";
 
 export default function Home() {
   return (
@@ -8,7 +8,7 @@ export default function Home() {
         Publication-ready graphs from your data files. Everything runs in your browser — your data never
         leaves your device.
       </p>
-      <PocDemo />
+      <GraphikaApp />
     </main>
   );
 }
