@@ -6,14 +6,14 @@ Graphika turns a CSV or Excel file into a journal-quality figure in a few clicks
 coding. It is made for researchers in disaster science, climate resilience and related
 fields, but works for any tabular data.
 
-- 🔒 **Your data never leaves your computer.** Everything runs inside your web browser. There
+- **Your data never leaves your computer.** Everything runs inside your web browser. There
   is no server, no account and no tracking.
-- 📊 **Six chart types:** line (time series), bar, scatter with trendline, histogram, box plot
+- **Six chart types:** line (time series), bar, scatter with trendline, histogram, box plot
   and correlation matrix.
-- 💡 **Chart suggestions** based on what your columns contain, each with a live preview.
-- 📐 **Journal-ready output:** exact sizes in millimetres (single or double column), 300 or
+- **Chart suggestions** based on what your columns contain, each with a live preview.
+- **Journal-ready output:** exact sizes in millimetres (single or double column), 300 or
   600 dpi, as PDF, SVG, TIFF, PNG or JPG, with real fonts embedded.
-- 🎨 **Colourblind-safe colours** by default, plus a greyscale option for print.
+- **Colourblind-safe colours** by default, plus a greyscale option for print.
 
 Under the hood the charts are drawn by [matplotlib](https://matplotlib.org), the plotting
 library many scientists already use, running in your browser via

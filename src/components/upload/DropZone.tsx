@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { FileSpreadsheet, Upload } from "lucide-react";
+import { FileSpreadsheet, Lock, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ACCEPTED_EXTENSIONS } from "@/lib/data/loadFile";
@@ -45,17 +45,23 @@ export function DropZone({ onFile, onSample, busy }: Props) {
           if (file) onFile(file);
         }}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed px-6 py-10 text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
-          dragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
+          "group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed px-6 py-12 text-center transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
+          dragging
+            ? "scale-[1.01] border-primary bg-primary/10"
+            : "border-primary/25 bg-primary/[0.03] hover:border-primary/50 hover:bg-primary/[0.06]",
           busy && "pointer-events-none opacity-60",
         )}
       >
-        <Upload className="size-8 text-muted-foreground" />
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform group-hover:-translate-y-0.5 dark:bg-sidebar-primary/15 dark:text-sidebar-primary">
+          <Upload className="size-6" />
+        </div>
         <div>
-          <p className="font-medium">Drop a data file here, or click to choose one</p>
+          <p className="text-base font-medium">Drop a data file here, or click to choose one</p>
           <p className="text-sm text-muted-foreground">CSV, TSV or Excel (.xlsx, .xls, .ods) · up to 50 MB</p>
         </div>
-        <p className="text-xs text-muted-foreground">Your file is read on this device and never uploaded anywhere.</p>
+        <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Lock className="size-3" /> Your file is read on this device and never uploaded anywhere.
+        </p>
         <input
           ref={inputRef}
           type="file"
@@ -70,7 +76,7 @@ export function DropZone({ onFile, onSample, busy }: Props) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">Or try a sample:</span>
+        <span className="text-sm text-muted-foreground">Or try a sample dataset:</span>
         {SAMPLES.map((s) => (
           <Button key={s.file} variant="outline" size="sm" disabled={busy} onClick={() => onSample(s.file)}>
             <FileSpreadsheet /> {s.label}

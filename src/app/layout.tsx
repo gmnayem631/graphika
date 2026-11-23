@@ -29,6 +29,12 @@ const CSP = [
   "form-action 'none'",
 ].join("; ");
 
+/**
+ * Runs before first paint: apply the saved theme (or the system preference)
+ * so the page never flashes the wrong colours. Kept in sync with ThemeToggle.
+ */
+const THEME_SCRIPT = `try{var t=localStorage.getItem("theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`;
+
 export const metadata: Metadata = {
   title: "Graphika — publication-ready graphs, privately",
   description:
@@ -37,8 +43,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={cn("h-full antialiased font-sans", inter.variable, jetbrainsMono.variable)}>
-      <head>{process.env.NODE_ENV === "production" && <meta httpEquiv="Content-Security-Policy" content={CSP} />}</head>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn("h-full antialiased font-sans", inter.variable, jetbrainsMono.variable)}
+    >
+      <head>
+        {process.env.NODE_ENV === "production" && <meta httpEquiv="Content-Security-Policy" content={CSP} />}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

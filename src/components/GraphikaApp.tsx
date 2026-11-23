@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, PencilRuler, RotateCcw, XCircle } from "lucide-react";
+import { PencilRuler, RotateCcw, XCircle } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ColumnsPanel } from "@/components/columns/ColumnsPanel";
+import { Hero, SiteFooter, SiteHeader } from "@/components/layout/Site";
+import { StepCard } from "@/components/layout/StepCard";
 import { DataPreview } from "@/components/upload/DataPreview";
 import { DropZone } from "@/components/upload/DropZone";
 import { ChartEditor } from "@/components/chart/ChartEditor";
@@ -25,18 +26,6 @@ function friendlyMessage(err: unknown): string {
   if (err instanceof DataFileError) return err.message;
   console.error(err);
   return "Something unexpected went wrong while reading this file. If it opens in Excel, try saving it as CSV and uploading that.";
-}
-
-function EngineBadge({ status }: { status: EngineStatus | null }) {
-  if (status?.state === "ready") return <span className="text-xs text-muted-foreground">Chart engine ready</span>;
-  if (status?.state === "failed")
-    return <span className="text-xs text-destructive">Chart engine failed to load: {status.message}</span>;
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <Loader2 className="size-3 animate-spin" />
-      {status?.message ?? "Starting the chart engine…"}
-    </span>
-  );
 }
 
 export function GraphikaApp() {
@@ -119,28 +108,29 @@ export function GraphikaApp() {
     });
   }
 
+  const resetFile = () => {
+    setOpened(null);
+    setOpenError(null);
+  };
+
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>1. Your data</CardTitle>
-          <CardDescription>{opened ? opened.fileName : <EngineBadge status={engineStatus} />}</CardDescription>
-          {opened && (
-            <CardAction>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setOpened(null);
-                  setOpenError(null);
-                }}
-              >
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-primary/[0.06] via-background to-background">
+      <SiteHeader status={engineStatus} />
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 pb-16 sm:px-6">
+        {!opened ? <Hero /> : <div className="h-2" />}
+
+        <StepCard
+          step={1}
+          title="Your data"
+          description={opened ? opened.fileName : "CSV, TSV or Excel. Try a sample if you just want to look around."}
+          action={
+            opened && (
+              <Button variant="ghost" size="sm" onClick={resetFile}>
                 <RotateCcw /> Choose another file
               </Button>
-            </CardAction>
-          )}
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+            )
+          }
+        >
           {!opened && <DropZone onFile={loadUpload} onSample={loadSample} busy={loading} />}
           {error && (
             <Alert variant="destructive">
@@ -152,42 +142,33 @@ export function GraphikaApp() {
           {opened && table && (
             <DataPreview key={opened.fileName} table={table} options={options} onOptionsChange={setOptions} />
           )}
-        </CardContent>
-      </Card>
+        </StepCard>
 
-      {columns && (
-        <Card>
-          <CardHeader>
-            <CardTitle>2. Columns</CardTitle>
-            <CardDescription>
-              We guessed what each column contains. Change it if something looks wrong — this decides which charts
-              make sense.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {columns && (
+          <StepCard
+            step={2}
+            title="Columns"
+            description="We guessed what each column contains. Change it if something looks wrong — this decides which charts make sense."
+          >
             <ColumnsPanel columns={columns} onOverride={setOverride} />
-          </CardContent>
-        </Card>
-      )}
+          </StepCard>
+        )}
 
-      {typedColumns && (
-        <Card>
-          <CardHeader>
-            <CardTitle>3. Pick a chart</CardTitle>
-            <CardAction>
-              <Button variant="ghost" size="sm" onClick={buildOwn}>
+        {typedColumns && (
+          <StepCard
+            step={3}
+            title="Pick a chart"
+            description={
+              engineReady
+                ? "Suggestions based on your columns. Click one to start from it."
+                : "Suggestions appear as soon as the chart engine has loaded (first visit only takes a while)."
+            }
+            action={
+              <Button variant="outline" size="sm" onClick={buildOwn}>
                 <PencilRuler /> Build my own
               </Button>
-            </CardAction>
-            <CardDescription>
-              {engineReady ? (
-                "Suggestions based on your column types. Click one to use it."
-              ) : (
-                <EngineBadge status={engineStatus} />
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            }
+          >
             <SuggestionGallery
               suggestions={suggestions}
               columns={typedColumns}
@@ -195,17 +176,16 @@ export function GraphikaApp() {
               selectedId={selectedId}
               onSelect={(s) => setSpec(s.spec)}
             />
-          </CardContent>
-        </Card>
-      )}
+          </StepCard>
+        )}
 
-      {spec && columns && typedColumns && table && (
-        <Card>
-          <CardHeader>
-            <CardTitle>4. Your chart</CardTitle>
-            <CardDescription>Change the chart type or which columns go where.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-6">
+        {spec && columns && typedColumns && table && (
+          <StepCard
+            step={4}
+            title="Your chart"
+            description="Change the chart type or which columns go where."
+            contentClassName="gap-6"
+          >
             <ChartEditor spec={spec} columns={columns} onChange={setSpec} />
             {problem ? (
               <Alert>
@@ -215,31 +195,21 @@ export function GraphikaApp() {
             ) : (
               <ChartPreview spec={spec} columns={typedColumns} look={look} size={previewSize} ready={engineReady} />
             )}
-          </CardContent>
-        </Card>
-      )}
+          </StepCard>
+        )}
 
-      {spec && !problem && (
-        <Card>
-          <CardHeader>
-            <CardTitle>5. Labels &amp; style</CardTitle>
-            <CardDescription>
-              Leave a label empty to use the column name. These settings stay when you switch chart type.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {spec && !problem && (
+          <StepCard
+            step={5}
+            title="Labels & style"
+            description="Leave a label empty to use the column name. These settings stay when you switch chart type."
+          >
             <StylePanel look={look} onChange={setLook} axes={spec.chart !== "heatmap"} />
-          </CardContent>
-        </Card>
-      )}
+          </StepCard>
+        )}
 
-      {spec && !problem && typedColumns && table && (
-        <Card>
-          <CardHeader>
-            <CardTitle>6. Size &amp; download</CardTitle>
-            <CardDescription>The file is created on your device — nothing is uploaded.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        {spec && !problem && typedColumns && table && (
+          <StepCard step={6} title="Size & download" description="The file is created on your device — nothing is uploaded.">
             <ExportPanel
               settings={exportSettings}
               onChange={setExportSettings}
@@ -249,9 +219,10 @@ export function GraphikaApp() {
               fileName={table.source.fileName}
               ready={engineReady}
             />
-          </CardContent>
-        </Card>
-      )}
+          </StepCard>
+        )}
+      </main>
+      <SiteFooter />
     </div>
   );
 }
