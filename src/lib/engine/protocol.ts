@@ -17,8 +17,6 @@ export interface ColumnData {
   values: (number | string | null)[];
 }
 
-export type ChartKind = "line";
-
 export type ExportFormat = "png" | "jpg" | "tiff" | "svg" | "pdf";
 
 export const MIME_TYPES: Record<ExportFormat, string> = {
@@ -39,21 +37,80 @@ export interface FigureOptions {
   fontSizePt: number;
 }
 
-/** Options for the time-series line chart. */
-export interface LineOptions {
-  x: string;
-  y: string[];
+// ---- chart specifications (one options type per chart; mirrored in public/py/graphika/charts/) ----
+
+/** Text shared by all charts. Empty/undefined labels fall back to column names. */
+export interface TextOptions {
   title?: string;
   xLabel?: string;
   yLabel?: string;
 }
 
-export interface RenderRequest {
-  chart: ChartKind;
-  columns: ColumnData[];
-  options: LineOptions;
-  figure: FigureOptions;
+/** Lines over a date or number axis. Wide data: several y columns. Long data: one y split by `group`. */
+export interface LineOptions extends TextOptions {
+  x: string;
+  y: string[];
+  group?: string;
 }
+
+export type Aggregation = "mean" | "sum" | "median" | "count";
+
+/**
+ * Bars per category of `x`. Several rows per category are combined with `agg`.
+ * Several y columns, or a `group`, give grouped bars. No y: bar height = row count.
+ */
+export interface BarOptions extends TextOptions {
+  x: string;
+  y: string[];
+  group?: string;
+  agg: Aggregation;
+  orientation?: "auto" | "vertical" | "horizontal";
+}
+
+export interface ScatterOptions extends TextOptions {
+  x: string;
+  y: string;
+  group?: string;
+  /** Straight-line least-squares fit with R². */
+  trendline: boolean;
+}
+
+export interface HistogramOptions extends TextOptions {
+  x: string;
+  group?: string;
+  /** Number of bins, or "auto". */
+  bins: number | "auto";
+}
+
+/** One box per y column, or one box per category of `group`. */
+export interface BoxOptions extends TextOptions {
+  y: string[];
+  group?: string;
+  /** Overlay the individual data points ("auto": only for small samples). */
+  showPoints: "auto" | boolean;
+}
+
+/** Correlation matrix of numeric columns. */
+export interface HeatmapOptions extends TextOptions {
+  columns: string[];
+  method: "pearson" | "spearman";
+}
+
+export type ChartSpec =
+  | { chart: "line"; options: LineOptions }
+  | { chart: "bar"; options: BarOptions }
+  | { chart: "scatter"; options: ScatterOptions }
+  | { chart: "histogram"; options: HistogramOptions }
+  | { chart: "box"; options: BoxOptions }
+  | { chart: "heatmap"; options: HeatmapOptions };
+
+export type ChartKind = ChartSpec["chart"];
+
+export type RenderRequest = ChartSpec & {
+  /** Only the columns the chart uses. */
+  columns: ColumnData[];
+  figure: FigureOptions;
+};
 
 // ---- messages: main thread -> worker ----
 export type WorkerRequest =

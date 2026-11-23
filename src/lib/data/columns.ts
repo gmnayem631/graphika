@@ -33,6 +33,8 @@ export interface ColumnSummary {
   max?: number | string;
   /** categorical: most frequent categories. */
   topCategories?: { value: string; count: number }[];
+  /** numeric: every value is a whole number (counts, years, codes). */
+  integer?: boolean;
   /** All values are whole numbers between 1800 and 2100. */
   yearLike?: boolean;
   /** Every value is different (an ID / label column). */
@@ -126,7 +128,8 @@ function summarize(
     }
     summary.min = min;
     summary.max = max;
-    summary.yearLike = nums.every((n) => Number.isInteger(n) && n >= 1800 && n <= 2100);
+    summary.integer = nums.every(Number.isInteger);
+    summary.yearLike = summary.integer && min >= 1800 && max <= 2100;
   } else if (type === "datetime" && converted.length) {
     const sorted = (converted as string[]).slice().sort();
     summary.min = sorted[0];

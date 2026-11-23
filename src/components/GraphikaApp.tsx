@@ -8,7 +8,9 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { ColumnsPanel } from "@/components/columns/ColumnsPanel";
 import { DataPreview } from "@/components/upload/DataPreview";
 import { DropZone } from "@/components/upload/DropZone";
-import { PocChart } from "@/components/poc/PocChart";
+import { ChartPreview } from "@/components/chart/ChartPreview";
+import { SuggestionGallery } from "@/components/chart/SuggestionGallery";
+import { suggestCharts } from "@/lib/charts/suggest";
 import { getEngine, type EngineStatus } from "@/lib/engine/client";
 import { inferColumns, toTypedColumns, type ColumnOverride } from "@/lib/data/columns";
 import { openFile, readFile, toTable, type OpenedFile } from "@/lib/data/loadFile";
@@ -37,6 +39,7 @@ export function GraphikaApp() {
   const [opened, setOpened] = useState<OpenedFile | null>(null);
   const [options, setOptions] = useState<ParseOptions>({});
   const [overrides, setOverrides] = useState<Record<string, ColumnOverride>>({});
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,6 +64,7 @@ export function GraphikaApp() {
       setOpened(file);
       setOptions({});
       setOverrides({});
+      setSelectedId(null);
     } catch (e) {
       setOpened(null);
       setOpenError(friendlyMessage(e));
@@ -82,6 +86,10 @@ export function GraphikaApp() {
 
   const columns = useMemo(() => (table ? inferColumns(table, overrides) : null), [table, overrides]);
   const typedColumns = useMemo(() => (table && columns ? toTypedColumns(table, columns) : null), [table, columns]);
+  const suggestions = useMemo(() => (columns ? suggestCharts(columns) : []), [columns]);
+  // A selection disappears if a column change means it's no longer suggested.
+  const selected = suggestions.find((s) => s.id === selectedId) ?? null;
+  const engineReady = engineStatus?.state === "ready";
 
   function setOverride(name: string, override: ColumnOverride | null) {
     setOverrides((prev) => {
@@ -143,16 +151,43 @@ export function GraphikaApp() {
         </Card>
       )}
 
-      {table && typedColumns && (
+      {typedColumns && (
         <Card>
           <CardHeader>
-            <CardTitle>Chart (preview — full chart builder coming next)</CardTitle>
+            <CardTitle>3. Pick a chart</CardTitle>
             <CardDescription>
-              <EngineBadge status={engineStatus} />
+              {engineReady ? (
+                "Suggestions based on your column types. Click one to use it."
+              ) : (
+                <EngineBadge status={engineStatus} />
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PocChart columns={typedColumns} fileName={table.source.fileName} ready={engineStatus?.state === "ready"} />
+            <SuggestionGallery
+              suggestions={suggestions}
+              columns={typedColumns}
+              ready={engineReady}
+              selectedId={selected?.id ?? null}
+              onSelect={(s) => setSelectedId(s.id)}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {selected && typedColumns && table && (
+        <Card>
+          <CardHeader>
+            <CardTitle>4. Your chart</CardTitle>
+            <CardDescription>{selected.title}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartPreview
+              spec={selected.spec}
+              columns={typedColumns}
+              fileName={table.source.fileName}
+              ready={engineReady}
+            />
           </CardContent>
         </Card>
       )}

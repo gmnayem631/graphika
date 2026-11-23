@@ -21,7 +21,13 @@ export const PY_FILES = [
   "graphika/render.py",
   "graphika/style.py",
   "graphika/charts/__init__.py",
+  "graphika/charts/_common.py",
   "graphika/charts/line.py",
+  "graphika/charts/bar.py",
+  "graphika/charts/scatter.py",
+  "graphika/charts/histogram.py",
+  "graphika/charts/box.py",
+  "graphika/charts/heatmap.py",
 ];
 
 /** Liberation fonts (SIL OFL): metric-compatible with Arial / Times New Roman. */

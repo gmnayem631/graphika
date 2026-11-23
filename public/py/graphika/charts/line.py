@@ -1,40 +1,39 @@
-"""Time-series line chart."""
-import matplotlib.dates as mdates
+"""Line chart (usually a time series)."""
 import pandas as pd
 
 from ..errors import ChartError
+from ._common import format_date_axis, is_datetime, non_empty, require, set_labels, category_order
 
 
 def plot(ax, df: pd.DataFrame, opts: dict) -> None:
-    """Draw one line per y column against x.
+    """One line per y column (wide data), or per category of `group` (long data).
 
     opts:
-      x       name of the x column (usually a date)
-      y       list of numeric column names, one line each
+      x       x column (date or number)
+      y       list of numeric columns; with `group`, only the first is used
+      group   optional categorical column: one line per category
       title, xLabel, yLabel   optional text
     Missing values leave a visible gap in the line rather than being bridged.
     """
-    x = opts["x"]
-    ys = opts.get("y") or []
+    x, ys, group = opts["x"], opts.get("y") or [], opts.get("group")
     if not ys:
         raise ChartError("Choose at least one column for the Y axis.")
-    missing = [c for c in [x, *ys] if c not in df.columns]
-    if missing:
-        raise ChartError(f"Column not found: {', '.join(missing)}")
+    require(df, x, *ys, group)
 
-    data = df.dropna(subset=[x]).sort_values(x)
-    for y in ys:
-        ax.plot(data[x], data[y], label=y)
+    data = non_empty(df.dropna(subset=[x])).sort_values(x, kind="stable")
+    if group:
+        y = ys[0]
+        for name in category_order(data[group]):
+            part = data[data[group] == name]
+            ax.plot(part[x], part[y], label=str(name))
+        y_default = y
+    else:
+        for y in ys:
+            ax.plot(data[x], data[y], label=y)
+        y_default = ys[0] if len(ys) == 1 else ""
 
-    if pd.api.types.is_datetime64_any_dtype(data[x]):
-        # Compact, unambiguous date ticks (e.g. "Jan", "2024").
-        locator = mdates.AutoDateLocator()
-        ax.xaxis.set_major_locator(locator)
-        ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
-
-    ax.set_xlabel(opts.get("xLabel", x))
-    ax.set_ylabel(opts.get("yLabel", ys[0] if len(ys) == 1 else ""))
-    if opts.get("title"):
-        ax.set_title(opts["title"])
-    if len(ys) > 1:
-        ax.legend(loc="best")
+    if is_datetime(data[x]):
+        format_date_axis(ax.xaxis)
+    set_labels(ax, opts, x, y_default)
+    if group or len(ys) > 1:
+        ax.legend(loc="best", title=group)
