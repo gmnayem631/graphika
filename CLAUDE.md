@@ -13,7 +13,8 @@ researchers in disaster science, climate resilience and related fields who don't
 - **Zero cost.** Only free, open-source libraries and assets (check licences, e.g. fonts are SIL OFL).
 - **Audience doesn't code.** Errors must be friendly and actionable, never stack traces or jargon.
 - The only allowed external network requests are for **code** (Pyodide runtime + Python wheels from the
-  pinned CDN). Keep it self-hostable (see README).
+  pinned CDN), made by the worker. Keep it self-hostable (see README). The page's CSP in
+  `src/app/layout.tsx` has `connect-src 'self'` — never loosen it to an outside host.
 
 ## Out of scope (for now)
 User accounts, saved graphs, server-side processing, LLM / natural-language features, NetCDF/GeoTIFF.

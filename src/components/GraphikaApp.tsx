@@ -10,6 +10,7 @@ import { DataPreview } from "@/components/upload/DataPreview";
 import { DropZone } from "@/components/upload/DropZone";
 import { ChartEditor } from "@/components/chart/ChartEditor";
 import { ChartPreview } from "@/components/chart/ChartPreview";
+import { DEFAULT_EXPORT, ExportPanel, type ExportSettings } from "@/components/chart/ExportPanel";
 import { DEFAULT_LOOK, StylePanel, type ChartLook } from "@/components/chart/StylePanel";
 import { SuggestionGallery } from "@/components/chart/SuggestionGallery";
 import { checkSpec, defaultSpec } from "@/lib/charts/builder";
@@ -45,6 +46,7 @@ export function GraphikaApp() {
   const [overrides, setOverrides] = useState<Record<string, ColumnOverride>>({});
   const [spec, setSpec] = useState<ChartSpec | null>(null);
   const [look, setLook] = useState<ChartLook>(DEFAULT_LOOK);
+  const [exportSettings, setExportSettings] = useState<ExportSettings>(DEFAULT_EXPORT);
   const [openError, setOpenError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -94,6 +96,11 @@ export function GraphikaApp() {
   const typedColumns = useMemo(() => (table && columns ? toTypedColumns(table, columns) : null), [table, columns]);
   const suggestions = useMemo(() => (columns ? suggestCharts(columns) : []), [columns]);
   const selectedId = spec ? JSON.stringify(spec) : null;
+  const clampMm = (mm: number) => Math.min(500, Math.max(20, mm));
+  const previewSize = useMemo(
+    () => ({ widthMm: clampMm(exportSettings.widthMm), heightMm: clampMm(exportSettings.heightMm) }),
+    [exportSettings.widthMm, exportSettings.heightMm],
+  );
   const problem = spec && columns ? checkSpec(spec, columns) : null;
 
   function buildOwn() {
@@ -206,13 +213,7 @@ export function GraphikaApp() {
                 <AlertDescription>{problem}</AlertDescription>
               </Alert>
             ) : (
-              <ChartPreview
-                spec={spec}
-                columns={typedColumns}
-                fileName={table.source.fileName}
-                look={look}
-                ready={engineReady}
-              />
+              <ChartPreview spec={spec} columns={typedColumns} look={look} size={previewSize} ready={engineReady} />
             )}
           </CardContent>
         </Card>
@@ -228,6 +229,26 @@ export function GraphikaApp() {
           </CardHeader>
           <CardContent>
             <StylePanel look={look} onChange={setLook} axes={spec.chart !== "heatmap"} />
+          </CardContent>
+        </Card>
+      )}
+
+      {spec && !problem && typedColumns && table && (
+        <Card>
+          <CardHeader>
+            <CardTitle>6. Size &amp; download</CardTitle>
+            <CardDescription>The file is created on your device — nothing is uploaded.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExportPanel
+              settings={exportSettings}
+              onChange={setExportSettings}
+              spec={spec}
+              columns={typedColumns}
+              look={look}
+              fileName={table.source.fileName}
+              ready={engineReady}
+            />
           </CardContent>
         </Card>
       )}

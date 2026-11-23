@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { specColumns } from "@/lib/charts/suggest";
 import type { TypedColumn } from "@/lib/data/columns";
 import { getEngine } from "@/lib/engine/client";
-import type { ChartSpec, FigureOptions, RenderRequest, StyleOptions } from "@/lib/engine/protocol";
+import type { ChartSpec, ExportFormat, FigureOptions, RenderRequest, StyleOptions } from "@/lib/engine/protocol";
+import type { ChartLook } from "./StylePanel";
 
 /** Build an engine request that carries only the columns the chart uses. */
 export function buildRequest(
@@ -15,6 +16,22 @@ export function buildRequest(
 ): RenderRequest {
   const needed = new Set(specColumns(spec));
   return { ...spec, columns: columns.filter((c) => needed.has(c.name)), figure, style } as RenderRequest;
+}
+
+export interface FigureSize {
+  widthMm: number;
+  heightMm: number;
+}
+
+/** Split the user's look into engine figure settings (size, fonts) and style options. */
+export function figureAndStyle(
+  look: ChartLook,
+  size: FigureSize,
+  dpi: number,
+  format: ExportFormat,
+): [FigureOptions, StyleOptions] {
+  const { fontFamily, fontSizePt, ...style } = look;
+  return [{ ...size, fontFamily, fontSizePt, dpi, format }, style];
 }
 
 /** The value, but only after it has stopped changing for `ms` (e.g. while typing). */
@@ -63,7 +80,8 @@ export function useChartImage(request: RenderRequest | null, ready: boolean) {
 
   const current = rendered && rendered.request === request ? rendered : null;
   return {
-    url: current?.url ?? null,
+    // While a new version renders, keep showing the previous image (no flicker).
+    url: current ? current.url : (rendered?.url ?? null),
     error: current?.error ?? null,
     loading: Boolean(request) && !current,
   };

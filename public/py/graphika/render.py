@@ -93,9 +93,10 @@ def render(request: dict) -> bytes:
     height_in = figure["heightMm"] / MM_PER_INCH
     if fmt in RASTER_FORMATS:
         # matplotlib truncates to whole pixels; snap so e.g. 180 mm @ 300 dpi
-        # gives 2126 px (rounded) rather than 2125 px (truncated).
-        width_in = round(width_in * dpi) / dpi
-        height_in = round(height_in * dpi) / dpi
+        # gives 2126 px (rounded) rather than 2125 px (truncated). The extra
+        # quarter pixel absorbs floating-point error (1534.9999 -> 1535).
+        width_in = (round(width_in * dpi) + 0.25) / dpi
+        height_in = (round(height_in * dpi) + 0.25) / dpi
 
     look = request.get("style") or {}
     # Text from the style panel is passed to the chart like its own options.
