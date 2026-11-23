@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, RotateCcw, XCircle } from "lucide-react";
+import { Loader2, PencilRuler, RotateCcw, XCircle } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,12 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { ColumnsPanel } from "@/components/columns/ColumnsPanel";
 import { DataPreview } from "@/components/upload/DataPreview";
 import { DropZone } from "@/components/upload/DropZone";
+import { ChartEditor } from "@/components/chart/ChartEditor";
 import { ChartPreview } from "@/components/chart/ChartPreview";
 import { SuggestionGallery } from "@/components/chart/SuggestionGallery";
+import { checkSpec, defaultSpec } from "@/lib/charts/builder";
 import { suggestCharts } from "@/lib/charts/suggest";
+import type { ChartKind, ChartSpec } from "@/lib/engine/protocol";
 import { getEngine, type EngineStatus } from "@/lib/engine/client";
 import { inferColumns, toTypedColumns, type ColumnOverride } from "@/lib/data/columns";
 import { openFile, readFile, toTable, type OpenedFile } from "@/lib/data/loadFile";
@@ -39,7 +42,7 @@ export function GraphikaApp() {
   const [opened, setOpened] = useState<OpenedFile | null>(null);
   const [options, setOptions] = useState<ParseOptions>({});
   const [overrides, setOverrides] = useState<Record<string, ColumnOverride>>({});
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [spec, setSpec] = useState<ChartSpec | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -64,7 +67,7 @@ export function GraphikaApp() {
       setOpened(file);
       setOptions({});
       setOverrides({});
-      setSelectedId(null);
+      setSpec(null);
     } catch (e) {
       setOpened(null);
       setOpenError(friendlyMessage(e));
@@ -87,8 +90,14 @@ export function GraphikaApp() {
   const columns = useMemo(() => (table ? inferColumns(table, overrides) : null), [table, overrides]);
   const typedColumns = useMemo(() => (table && columns ? toTypedColumns(table, columns) : null), [table, columns]);
   const suggestions = useMemo(() => (columns ? suggestCharts(columns) : []), [columns]);
-  // A selection disappears if a column change means it's no longer suggested.
-  const selected = suggestions.find((s) => s.id === selectedId) ?? null;
+  const selectedId = spec ? JSON.stringify(spec) : null;
+  const problem = spec && columns ? checkSpec(spec, columns) : null;
+
+  function buildOwn() {
+    const kinds: ChartKind[] = ["line", "bar", "scatter", "histogram", "box", "heatmap"];
+    const first = columns && kinds.map((k) => defaultSpec(k, columns)).find(Boolean);
+    if (first) setSpec(first);
+  }
   const engineReady = engineStatus?.state === "ready";
 
   function setOverride(name: string, override: ColumnOverride | null) {
@@ -155,6 +164,11 @@ export function GraphikaApp() {
         <Card>
           <CardHeader>
             <CardTitle>3. Pick a chart</CardTitle>
+            <CardAction>
+              <Button variant="ghost" size="sm" onClick={buildOwn}>
+                <PencilRuler /> Build my own
+              </Button>
+            </CardAction>
             <CardDescription>
               {engineReady ? (
                 "Suggestions based on your column types. Click one to use it."
@@ -168,26 +182,29 @@ export function GraphikaApp() {
               suggestions={suggestions}
               columns={typedColumns}
               ready={engineReady}
-              selectedId={selected?.id ?? null}
-              onSelect={(s) => setSelectedId(s.id)}
+              selectedId={selectedId}
+              onSelect={(s) => setSpec(s.spec)}
             />
           </CardContent>
         </Card>
       )}
 
-      {selected && typedColumns && table && (
+      {spec && columns && typedColumns && table && (
         <Card>
           <CardHeader>
             <CardTitle>4. Your chart</CardTitle>
-            <CardDescription>{selected.title}</CardDescription>
+            <CardDescription>Change the chart type or which columns go where.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ChartPreview
-              spec={selected.spec}
-              columns={typedColumns}
-              fileName={table.source.fileName}
-              ready={engineReady}
-            />
+          <CardContent className="flex flex-col gap-6">
+            <ChartEditor spec={spec} columns={columns} onChange={setSpec} />
+            {problem ? (
+              <Alert>
+                <AlertTitle>Almost there</AlertTitle>
+                <AlertDescription>{problem}</AlertDescription>
+              </Alert>
+            ) : (
+              <ChartPreview spec={spec} columns={typedColumns} fileName={table.source.fileName} ready={engineReady} />
+            )}
           </CardContent>
         </Card>
       )}
