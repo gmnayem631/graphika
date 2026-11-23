@@ -6,7 +6,9 @@
  * anywhere. The only network traffic is the worker downloading Pyodide code.
  */
 
-export type ColumnType = "numeric" | "categorical" | "datetime";
+import type { ColumnType } from "@/lib/data/types";
+
+export type { ColumnType };
 
 /** One clean column handed to Python. Datetimes are ISO-8601 strings. */
 export interface ColumnData {

@@ -5,6 +5,9 @@ export type Cell = string | null;
 
 export type FileKind = "csv" | "xlsx";
 
+/** How a column is treated for charting. */
+export type ColumnType = "numeric" | "categorical" | "datetime";
+
 export type Delimiter = "," | ";" | "\t" | "|";
 export type DecimalSeparator = "." | ",";
 

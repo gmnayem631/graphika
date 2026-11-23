@@ -1,8 +1,7 @@
 "use client";
 /**
- * TEMPORARY (phases 1–2): renders a line chart from the parsed table with a
- * naive column typing, plus PDF/SVG/PNG download. Replaced by proper column
- * detection (phase 3) and the chart builder (phases 4–5).
+ * TEMPORARY: renders a line chart from the typed columns, plus PDF/SVG/PNG
+ * download. Replaced by the chart builder in phases 4–5.
  */
 import { useEffect, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
@@ -10,30 +9,6 @@ import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getEngine } from "@/lib/engine/client";
 import type { ColumnData, ExportFormat, RenderRequest } from "@/lib/engine/protocol";
-import { parseNumber } from "@/lib/data/normalize";
-import type { RawTable } from "@/lib/data/types";
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
-const DMY_DOT = /^(\d{2})\.(\d{2})\.(\d{4})$/;
-
-function naiveColumns(table: RawTable): ColumnData[] {
-  const dec = table.source.decimalSeparator;
-  return table.headers.map((name, c) => {
-    const raw = table.rows.map((r) => r[c]);
-    const filled = raw.filter((v): v is string => v !== null);
-    if (filled.length && filled.every((v) => ISO_DATE.test(v) || DMY_DOT.test(v))) {
-      return {
-        name,
-        type: "datetime",
-        values: raw.map((v) => (v === null ? null : v.replace(DMY_DOT, "$3-$2-$1"))),
-      };
-    }
-    if (filled.length && filled.every((v) => parseNumber(v, dec) !== null)) {
-      return { name, type: "numeric", values: raw.map((v) => (v === null ? null : parseNumber(v, dec))) };
-    }
-    return { name, type: "categorical", values: raw };
-  });
-}
 
 function buildRequest(columns: ColumnData[], format: ExportFormat, dpi: number): RenderRequest | null {
   const x = columns.find((c) => c.type === "datetime") ?? columns.find((c) => c.type === "numeric");
@@ -56,12 +31,11 @@ function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function PocChart({ table, ready }: { table: RawTable; ready: boolean }) {
+export function PocChart({ columns, fileName, ready }: { columns: ColumnData[]; fileName: string; ready: boolean }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const columns = naiveColumns(table);
   const request = buildRequest(columns, "png", 150);
   const requestKey = request ? JSON.stringify(request) : null;
 
@@ -97,7 +71,7 @@ export function PocChart({ table, ready }: { table: RawTable; ready: boolean }) 
     try {
       const req = buildRequest(columns, format, 300)!;
       const { blob } = await getEngine().render(req);
-      downloadBlob(blob, `${table.source.fileName.replace(/\.\w+$/, "")}.${format}`);
+      downloadBlob(blob, `${fileName.replace(/\.\w+$/, "")}.${format}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {

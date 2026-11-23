@@ -5,10 +5,12 @@ import { Loader2, RotateCcw, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ColumnsPanel } from "@/components/columns/ColumnsPanel";
 import { DataPreview } from "@/components/upload/DataPreview";
 import { DropZone } from "@/components/upload/DropZone";
 import { PocChart } from "@/components/poc/PocChart";
 import { getEngine, type EngineStatus } from "@/lib/engine/client";
+import { inferColumns, toTypedColumns, type ColumnOverride } from "@/lib/data/columns";
 import { openFile, readFile, toTable, type OpenedFile } from "@/lib/data/loadFile";
 import { DataFileError, type ParseOptions, type RawTable } from "@/lib/data/types";
 
@@ -34,6 +36,7 @@ export function GraphikaApp() {
   const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
   const [opened, setOpened] = useState<OpenedFile | null>(null);
   const [options, setOptions] = useState<ParseOptions>({});
+  const [overrides, setOverrides] = useState<Record<string, ColumnOverride>>({});
   const [openError, setOpenError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -57,6 +60,7 @@ export function GraphikaApp() {
       const file = await getFile();
       setOpened(file);
       setOptions({});
+      setOverrides({});
     } catch (e) {
       setOpened(null);
       setOpenError(friendlyMessage(e));
@@ -75,6 +79,18 @@ export function GraphikaApp() {
 
   const error = openError ?? (parsed && "error" in parsed ? parsed.error : null);
   const table = parsed && "table" in parsed ? parsed.table : null;
+
+  const columns = useMemo(() => (table ? inferColumns(table, overrides) : null), [table, overrides]);
+  const typedColumns = useMemo(() => (table && columns ? toTypedColumns(table, columns) : null), [table, columns]);
+
+  function setOverride(name: string, override: ColumnOverride | null) {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      if (override) next[name] = override;
+      else delete next[name];
+      return next;
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -112,7 +128,22 @@ export function GraphikaApp() {
         </CardContent>
       </Card>
 
-      {table && (
+      {columns && (
+        <Card>
+          <CardHeader>
+            <CardTitle>2. Columns</CardTitle>
+            <CardDescription>
+              We guessed what each column contains. Change it if something looks wrong — this decides which charts
+              make sense.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ColumnsPanel columns={columns} onOverride={setOverride} />
+          </CardContent>
+        </Card>
+      )}
+
+      {table && typedColumns && (
         <Card>
           <CardHeader>
             <CardTitle>Chart (preview — full chart builder coming next)</CardTitle>
@@ -121,7 +152,7 @@ export function GraphikaApp() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PocChart table={table} ready={engineStatus?.state === "ready"} />
+            <PocChart columns={typedColumns} fileName={table.source.fileName} ready={engineStatus?.state === "ready"} />
           </CardContent>
         </Card>
       )}
