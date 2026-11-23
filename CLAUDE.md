@@ -19,8 +19,7 @@ researchers in disaster science, climate resilience and related fields who don't
 User accounts, saved graphs, server-side processing, LLM / natural-language features, NetCDF/GeoTIFF.
 
 ## Architecture
-- UI: Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4 + shadcn/ui (base-ui flavour).
-  Next 16 docs are bundled in `node_modules/next/dist/docs` — check them, APIs differ from older versions.
+- Next 16 docs are bundled in `node_modules/next/dist/docs` — check them, APIs differ from older versions.
 - Parsing & column typing live in **TypeScript** (`src/lib/data/`), unit-tested with Vitest. Entry point:
   `openFile()` (type/encoding sniffing, friendly `DataFileError`s) then `toTable(opened, options)`.
 - SheetJS is **vendored** (`vendor/xlsx-0.20.3.tgz`, from cdn.sheetjs.com): the npm-registry `xlsx` is
@@ -38,7 +37,7 @@ User accounts, saved graphs, server-side processing, LLM / natural-language feat
   `bbox_inches="tight"` (it changes the figure size).
 - TS ↔ Python boundary (`src/lib/engine/protocol.ts`): TS sends clean columnar data
   (`{name, type, values}`, numbers / ISO date strings / null) plus a typed options object; Python
-  returns bytes + MIME type. Keep it small and typed.
+  returns the encoded bytes (the client attaches the MIME type). Keep it small and typed.
 - Python (`public/py/graphika/`): one well-commented function per chart type taking a DataFrame and an
   options dict. Keep it small and modular.
 - Fonts: bundled Liberation Sans / Serif (metric-compatible with Arial / Times New Roman).
@@ -49,5 +48,3 @@ User accounts, saved graphs, server-side processing, LLM / natural-language feat
 - Build in small phases; explain what was done after each.
 - Add/maintain Vitest tests for parsing, type detection and chart-suggestion logic (`tests/`).
 - Sample datasets live in `public/samples/` (synthetic, labelled as such).
-- Commands: `npm run dev`, `npm test`, `npm run typecheck`, `npm run lint`, `npm run build` (→ `out/`),
-  `npm start` (serves `out/` locally).
