@@ -2,6 +2,7 @@
 /**
  * The selected chart at full size, plus downloads. Size and format controls
  * arrive with the export phase; for now: 180 × 100 mm, 300 dpi raster.
+ * The preview re-renders shortly after the user stops typing in the style panel.
  */
 import { useMemo, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
@@ -9,10 +10,17 @@ import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TypedColumn } from "@/lib/data/columns";
 import { getEngine } from "@/lib/engine/client";
-import type { ChartSpec, ExportFormat, FigureOptions } from "@/lib/engine/protocol";
-import { buildRequest, useChartImage } from "./useChartImage";
+import type { ChartSpec, ExportFormat, FigureOptions, StyleOptions } from "@/lib/engine/protocol";
+import type { ChartLook } from "./StylePanel";
+import { buildRequest, useChartImage, useDebounced } from "./useChartImage";
 
-const FIGURE: Omit<FigureOptions, "dpi" | "format"> = { widthMm: 180, heightMm: 100, fontFamily: "sans", fontSizePt: 8 };
+const SIZE = { widthMm: 180, heightMm: 100 };
+
+/** Split the user's look into engine figure settings (fonts) and style options. */
+function figureAndStyle(look: ChartLook, dpi: number, format: ExportFormat): [FigureOptions, StyleOptions] {
+  const { fontFamily, fontSizePt, ...style } = look;
+  return [{ ...SIZE, fontFamily, fontSizePt, dpi, format }, style];
+}
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -27,11 +35,16 @@ interface Props {
   spec: ChartSpec;
   columns: TypedColumn[];
   fileName: string;
+  look: ChartLook;
   ready: boolean;
 }
 
-export function ChartPreview({ spec, columns, fileName, ready }: Props) {
-  const request = useMemo(() => buildRequest(spec, columns, { ...FIGURE, dpi: 150, format: "png" }), [spec, columns]);
+export function ChartPreview({ spec, columns, fileName, look, ready }: Props) {
+  const settledLook = useDebounced(look, 400);
+  const request = useMemo(
+    () => buildRequest(spec, columns, ...figureAndStyle(settledLook, 150, "png")),
+    [spec, columns, settledLook],
+  );
   const { url, error, loading } = useChartImage(request, ready);
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -40,7 +53,7 @@ export function ChartPreview({ spec, columns, fileName, ready }: Props) {
     setExporting(format);
     setExportError(null);
     try {
-      const { blob } = await getEngine().render(buildRequest(spec, columns, { ...FIGURE, dpi: 300, format }));
+      const { blob } = await getEngine().render(buildRequest(spec, columns, ...figureAndStyle(look, 300, format)));
       downloadBlob(blob, `${fileName.replace(/\.\w+$/, "")}_${spec.chart}.${format}`);
     } catch (e) {
       setExportError((e as Error).message);

@@ -39,15 +39,8 @@ export interface FigureOptions {
 
 // ---- chart specifications (one options type per chart; mirrored in public/py/graphika/charts/) ----
 
-/** Text shared by all charts. Empty/undefined labels fall back to column names. */
-export interface TextOptions {
-  title?: string;
-  xLabel?: string;
-  yLabel?: string;
-}
-
 /** Lines over a date or number axis. Wide data: several y columns. Long data: one y split by `group`. */
-export interface LineOptions extends TextOptions {
+export interface LineOptions {
   x: string;
   y: string[];
   group?: string;
@@ -59,7 +52,7 @@ export type Aggregation = "mean" | "sum" | "median" | "count";
  * Bars per category of `x`. Several rows per category are combined with `agg`.
  * Several y columns, or a `group`, give grouped bars. No y: bar height = row count.
  */
-export interface BarOptions extends TextOptions {
+export interface BarOptions {
   x: string;
   y: string[];
   group?: string;
@@ -67,7 +60,7 @@ export interface BarOptions extends TextOptions {
   orientation?: "auto" | "vertical" | "horizontal";
 }
 
-export interface ScatterOptions extends TextOptions {
+export interface ScatterOptions {
   x: string;
   y: string;
   group?: string;
@@ -75,7 +68,7 @@ export interface ScatterOptions extends TextOptions {
   trendline: boolean;
 }
 
-export interface HistogramOptions extends TextOptions {
+export interface HistogramOptions {
   x: string;
   group?: string;
   /** Number of bins, or "auto". */
@@ -83,7 +76,7 @@ export interface HistogramOptions extends TextOptions {
 }
 
 /** One box per y column, or one box per category of `group`. */
-export interface BoxOptions extends TextOptions {
+export interface BoxOptions {
   y: string[];
   group?: string;
   /** Overlay the individual data points ("auto": only for small samples). */
@@ -91,7 +84,7 @@ export interface BoxOptions extends TextOptions {
 }
 
 /** Correlation matrix of numeric columns. */
-export interface HeatmapOptions extends TextOptions {
+export interface HeatmapOptions {
   columns: string[];
   method: "pearson" | "spearman";
 }
@@ -106,10 +99,39 @@ export type ChartSpec =
 
 export type ChartKind = ChartSpec["chart"];
 
+// ---- look & feel (independent of the chart type, so it survives switching charts) ----
+
+export type PaletteId = "okabe-ito" | "tol-bright" | "viridis" | "grayscale";
+
+export type LegendPosition =
+  | "best"
+  | "upper right"
+  | "upper left"
+  | "lower right"
+  | "lower left"
+  | "outside right"
+  | "below"
+  | "none";
+
+/** Empty labels fall back to column names; units are appended as "Label (unit)". */
+export interface StyleOptions {
+  title?: string;
+  xLabel?: string;
+  yLabel?: string;
+  xUnit?: string;
+  yUnit?: string;
+  palette: PaletteId;
+  legend: LegendPosition;
+  grid: boolean;
+}
+
+export const DEFAULT_STYLE: StyleOptions = { palette: "okabe-ito", legend: "best", grid: false };
+
 export type RenderRequest = ChartSpec & {
   /** Only the columns the chart uses. */
   columns: ColumnData[];
   figure: FigureOptions;
+  style?: StyleOptions;
 };
 
 // ---- messages: main thread -> worker ----

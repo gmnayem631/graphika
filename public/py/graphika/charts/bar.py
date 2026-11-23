@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-from ._common import category_order, non_empty, require, rotate_category_labels
+from ._common import axis_label, category_order, non_empty, require, rotate_category_labels
 
 AGG_LABELS = {"mean": "Mean", "sum": "Total", "median": "Median", "count": "Count"}
 
@@ -70,8 +70,9 @@ def plot(ax, df: pd.DataFrame, opts: dict) -> None:
         else:
             ax.bar(positions + offset, values, width=width, label=label)
 
-    category_label = opts.get("xLabel") or x
-    value_axis_label = opts.get("yLabel") or value_label
+    # "x" = the category axis and "y" = the value axis, whichever way the bars point.
+    category_label = axis_label(opts, "x", x)
+    value_axis_label = axis_label(opts, "y", value_label)
     if orientation == "horizontal":
         # Categories run down the y axis; values along x.
         ax.set_yticks(positions, categories)

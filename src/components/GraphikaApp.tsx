@@ -10,6 +10,7 @@ import { DataPreview } from "@/components/upload/DataPreview";
 import { DropZone } from "@/components/upload/DropZone";
 import { ChartEditor } from "@/components/chart/ChartEditor";
 import { ChartPreview } from "@/components/chart/ChartPreview";
+import { DEFAULT_LOOK, StylePanel, type ChartLook } from "@/components/chart/StylePanel";
 import { SuggestionGallery } from "@/components/chart/SuggestionGallery";
 import { checkSpec, defaultSpec } from "@/lib/charts/builder";
 import { suggestCharts } from "@/lib/charts/suggest";
@@ -43,6 +44,7 @@ export function GraphikaApp() {
   const [options, setOptions] = useState<ParseOptions>({});
   const [overrides, setOverrides] = useState<Record<string, ColumnOverride>>({});
   const [spec, setSpec] = useState<ChartSpec | null>(null);
+  const [look, setLook] = useState<ChartLook>(DEFAULT_LOOK);
   const [openError, setOpenError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -68,6 +70,7 @@ export function GraphikaApp() {
       setOptions({});
       setOverrides({});
       setSpec(null);
+      setLook((l) => ({ ...DEFAULT_LOOK, palette: l.palette, fontFamily: l.fontFamily, fontSizePt: l.fontSizePt }));
     } catch (e) {
       setOpened(null);
       setOpenError(friendlyMessage(e));
@@ -203,8 +206,28 @@ export function GraphikaApp() {
                 <AlertDescription>{problem}</AlertDescription>
               </Alert>
             ) : (
-              <ChartPreview spec={spec} columns={typedColumns} fileName={table.source.fileName} ready={engineReady} />
+              <ChartPreview
+                spec={spec}
+                columns={typedColumns}
+                fileName={table.source.fileName}
+                look={look}
+                ready={engineReady}
+              />
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {spec && !problem && (
+        <Card>
+          <CardHeader>
+            <CardTitle>5. Labels &amp; style</CardTitle>
+            <CardDescription>
+              Leave a label empty to use the column name. These settings stay when you switch chart type.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StylePanel look={look} onChange={setLook} axes={spec.chart !== "heatmap"} />
           </CardContent>
         </Card>
       )}

@@ -5,7 +5,8 @@ TypeScript sends one JSON request::
     {"chart": "line",
      "columns": [{"name": ..., "type": "numeric"|"categorical"|"datetime", "values": [...]}],
      "options": {...chart-specific...},
-     "figure": {"widthMm", "heightMm", "dpi", "format", "fontFamily", "fontSizePt"}}
+     "figure": {"widthMm", "heightMm", "dpi", "format", "fontFamily", "fontSizePt"},
+     "style": {"title", "xLabel", "yLabel", "xUnit", "yUnit", "palette", "legend", "grid"}}  (optional)
 
 and gets back the encoded figure as bytes.
 """
@@ -51,6 +52,32 @@ def build_dataframe(columns: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
+TEXT_KEYS = ("title", "xLabel", "yLabel", "xUnit", "yUnit")
+
+
+def place_legend(fig, ax, position: str) -> None:
+    """Move the legend a chart drew to where the user wants it (or remove it).
+
+    "outside right" and "below" use a figure legend; constrained layout then
+    shrinks the plot to make room, so the figure keeps its exact size.
+    """
+    legend = ax.get_legend()
+    if legend is None or position == "best":
+        return
+    handles = legend.legend_handles
+    labels = [t.get_text() for t in legend.get_texts()]
+    title = legend.get_title().get_text() or None
+    legend.remove()
+    if position == "none":
+        return
+    if position == "outside right":
+        fig.legend(handles, labels, title=title, loc="outside right upper")
+    elif position == "below":
+        fig.legend(handles, labels, title=title, loc="outside lower center", ncols=min(len(labels), 4))
+    else:
+        ax.legend(handles, labels, title=title, loc=position)
+
+
 def render(request: dict) -> bytes:
     """Draw the requested chart at its exact physical size and encode it."""
     chart = CHARTS.get(request["chart"])
@@ -70,12 +97,20 @@ def render(request: dict) -> bytes:
         width_in = round(width_in * dpi) / dpi
         height_in = round(height_in * dpi) / dpi
 
-    with matplotlib.rc_context(style.rc_params(figure)):
+    look = request.get("style") or {}
+    # Text from the style panel is passed to the chart like its own options.
+    options = {**request["options"], **{k: look[k] for k in TEXT_KEYS if look.get(k)}}
+
+    with matplotlib.rc_context(style.rc_params(figure, look.get("palette", "okabe-ito"))):
         # Exact size in inches; "constrained" layout fits labels *inside* this
         # size (unlike bbox_inches="tight", which would change it).
         fig = Figure(figsize=(width_in, height_in), dpi=dpi, layout="constrained")
         ax = fig.add_subplot()
-        chart(ax, df, request["options"])
+        chart(ax, df, options)
+        if look.get("grid") and request["chart"] != "heatmap":
+            ax.grid(True, linewidth=0.4, color="0.88")
+            ax.set_axisbelow(True)
+        place_legend(fig, ax, look.get("legend", "best"))
 
         save_kwargs: dict = {"format": fmt, "dpi": dpi}
         if fmt == "pdf":

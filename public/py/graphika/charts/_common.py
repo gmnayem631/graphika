@@ -35,10 +35,19 @@ def is_datetime(series: pd.Series) -> bool:
     return pd.api.types.is_datetime64_any_dtype(series)
 
 
+def axis_label(opts: dict, axis: str, default: str) -> str:
+    """The user's label for axis "x" or "y" (else the default), plus "(unit)" if given."""
+    text = opts.get(f"{axis}Label") or default
+    unit = opts.get(f"{axis}Unit")
+    if not unit:
+        return text
+    return f"{text} ({unit})" if text else unit
+
+
 def set_labels(ax, opts: dict, x_default: str = "", y_default: str = "") -> None:
     """Axis labels and title; an empty user label falls back to the default."""
-    ax.set_xlabel(opts.get("xLabel") or x_default)
-    ax.set_ylabel(opts.get("yLabel") or y_default)
+    ax.set_xlabel(axis_label(opts, "x", x_default))
+    ax.set_ylabel(axis_label(opts, "y", y_default))
     if opts.get("title"):
         ax.set_title(opts["title"])
 

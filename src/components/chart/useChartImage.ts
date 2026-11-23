@@ -4,12 +4,27 @@ import { useEffect, useState } from "react";
 import { specColumns } from "@/lib/charts/suggest";
 import type { TypedColumn } from "@/lib/data/columns";
 import { getEngine } from "@/lib/engine/client";
-import type { ChartSpec, FigureOptions, RenderRequest } from "@/lib/engine/protocol";
+import type { ChartSpec, FigureOptions, RenderRequest, StyleOptions } from "@/lib/engine/protocol";
 
 /** Build an engine request that carries only the columns the chart uses. */
-export function buildRequest(spec: ChartSpec, columns: TypedColumn[], figure: FigureOptions): RenderRequest {
+export function buildRequest(
+  spec: ChartSpec,
+  columns: TypedColumn[],
+  figure: FigureOptions,
+  style?: StyleOptions,
+): RenderRequest {
   const needed = new Set(specColumns(spec));
-  return { ...spec, columns: columns.filter((c) => needed.has(c.name)), figure } as RenderRequest;
+  return { ...spec, columns: columns.filter((c) => needed.has(c.name)), figure, style } as RenderRequest;
+}
+
+/** The value, but only after it has stopped changing for `ms` (e.g. while typing). */
+export function useDebounced<T>(value: T, ms: number): T {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return settled;
 }
 
 interface Rendered {
