@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "npm run build:worker && next dev",
+    "build": "npm run build:worker && next build",
     "start": "npx serve@14 out",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:worker": "esbuild src/workers/pyodide.worker.ts --bundle --format=esm --target=es2022 --minify --sourcemap --outfile=public/engine/pyodide.worker.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -30,8 +31,10 @@
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "pyodide": "^314.0.7",
     "tailwindcss": "^4",
     "typescript": "^6.0.3",
     "vitest": "^5.1.1"

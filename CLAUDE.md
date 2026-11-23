@@ -24,6 +24,12 @@ User accounts, saved graphs, server-side processing, LLM / natural-language feat
 - Parsing & column typing live in **TypeScript** (`src/lib/data/`), unit-tested with Vitest.
 - Charts are rendered by **matplotlib in Pyodide inside a Web Worker** (`src/workers/`). The UI must stay
   responsive while Pyodide loads/renders; show clear loading progress.
+- The worker must be a **module** worker (Pyodide 314+ refuses classic workers, and Turbopack bundles
+  workers as classic). So `src/workers/pyodide.worker.ts` is compiled by esbuild
+  (`npm run build:worker`, run automatically by `dev`/`build`) to `public/engine/` (gitignored) and
+  loaded by URL in `src/lib/engine/client.ts`. Re-run `build:worker` after editing the worker.
+- Pyodide is pinned in `src/lib/engine/config.ts`. seaborn is not in the Pyodide distribution — use
+  plain matplotlib.
 - **Preview = export**: the preview is the same matplotlib figure that is exported, at the same size in
   mm and with the same fonts; only DPI/format differ. Use `layout="constrained"`, never
   `bbox_inches="tight"` (it changes the figure size).
