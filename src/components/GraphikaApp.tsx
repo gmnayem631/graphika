@@ -11,16 +11,37 @@ import { DataPreview } from "@/components/upload/DataPreview";
 import { DropZone } from "@/components/upload/DropZone";
 import { ChartEditor } from "@/components/chart/ChartEditor";
 import { ChartPreview } from "@/components/chart/ChartPreview";
-import { DEFAULT_EXPORT, ExportPanel, type ExportSettings } from "@/components/chart/ExportPanel";
-import { DEFAULT_LOOK, StylePanel, type ChartLook } from "@/components/chart/StylePanel";
+import {
+  DEFAULT_EXPORT,
+  ExportPanel,
+  type ExportSettings,
+} from "@/components/chart/ExportPanel";
+import {
+  DEFAULT_LOOK,
+  StylePanel,
+  type ChartLook,
+} from "@/components/chart/StylePanel";
 import { SuggestionGallery } from "@/components/chart/SuggestionGallery";
 import { checkSpec, defaultSpec } from "@/lib/charts/builder";
 import { suggestCharts } from "@/lib/charts/suggest";
 import type { ChartKind, ChartSpec } from "@/lib/engine/protocol";
 import { getEngine, type EngineStatus } from "@/lib/engine/client";
-import { inferColumns, toTypedColumns, type ColumnOverride } from "@/lib/data/columns";
-import { openFile, readFile, toTable, type OpenedFile } from "@/lib/data/loadFile";
-import { DataFileError, type ParseOptions, type RawTable } from "@/lib/data/types";
+import {
+  inferColumns,
+  toTypedColumns,
+  type ColumnOverride,
+} from "@/lib/data/columns";
+import {
+  openFile,
+  readFile,
+  toTable,
+  type OpenedFile,
+} from "@/lib/data/loadFile";
+import {
+  DataFileError,
+  type ParseOptions,
+  type RawTable,
+} from "@/lib/data/types";
 
 function friendlyMessage(err: unknown): string {
   if (err instanceof DataFileError) return err.message;
@@ -32,10 +53,13 @@ export function GraphikaApp() {
   const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
   const [opened, setOpened] = useState<OpenedFile | null>(null);
   const [options, setOptions] = useState<ParseOptions>({});
-  const [overrides, setOverrides] = useState<Record<string, ColumnOverride>>({});
+  const [overrides, setOverrides] = useState<Record<string, ColumnOverride>>(
+    {},
+  );
   const [spec, setSpec] = useState<ChartSpec | null>(null);
   const [look, setLook] = useState<ChartLook>(DEFAULT_LOOK);
-  const [exportSettings, setExportSettings] = useState<ExportSettings>(DEFAULT_EXPORT);
+  const [exportSettings, setExportSettings] =
+    useState<ExportSettings>(DEFAULT_EXPORT);
   const [openError, setOpenError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,7 +85,12 @@ export function GraphikaApp() {
       setOptions({});
       setOverrides({});
       setSpec(null);
-      setLook((l) => ({ ...DEFAULT_LOOK, palette: l.palette, fontFamily: l.fontFamily, fontSizePt: l.fontSizePt }));
+      setLook((l) => ({
+        ...DEFAULT_LOOK,
+        palette: l.palette,
+        fontFamily: l.fontFamily,
+        fontSizePt: l.fontSizePt,
+      }));
     } catch (e) {
       setOpened(null);
       setOpenError(friendlyMessage(e));
@@ -78,23 +107,44 @@ export function GraphikaApp() {
       return openFile(new Uint8Array(await res.arrayBuffer()), name);
     });
 
-  const error = openError ?? (parsed && "error" in parsed ? parsed.error : null);
+  const error =
+    openError ?? (parsed && "error" in parsed ? parsed.error : null);
   const table = parsed && "table" in parsed ? parsed.table : null;
 
-  const columns = useMemo(() => (table ? inferColumns(table, overrides) : null), [table, overrides]);
-  const typedColumns = useMemo(() => (table && columns ? toTypedColumns(table, columns) : null), [table, columns]);
-  const suggestions = useMemo(() => (columns ? suggestCharts(columns) : []), [columns]);
+  const columns = useMemo(
+    () => (table ? inferColumns(table, overrides) : null),
+    [table, overrides],
+  );
+  const typedColumns = useMemo(
+    () => (table && columns ? toTypedColumns(table, columns) : null),
+    [table, columns],
+  );
+  const suggestions = useMemo(
+    () => (columns ? suggestCharts(columns) : []),
+    [columns],
+  );
   const selectedId = spec ? JSON.stringify(spec) : null;
   const clampMm = (mm: number) => Math.min(500, Math.max(20, mm));
   const previewSize = useMemo(
-    () => ({ widthMm: clampMm(exportSettings.widthMm), heightMm: clampMm(exportSettings.heightMm) }),
+    () => ({
+      widthMm: clampMm(exportSettings.widthMm),
+      heightMm: clampMm(exportSettings.heightMm),
+    }),
     [exportSettings.widthMm, exportSettings.heightMm],
   );
   const problem = spec && columns ? checkSpec(spec, columns) : null;
 
   function buildOwn() {
-    const kinds: ChartKind[] = ["line", "bar", "scatter", "histogram", "box", "heatmap"];
-    const first = columns && kinds.map((k) => defaultSpec(k, columns)).find(Boolean);
+    const kinds: ChartKind[] = [
+      "line",
+      "bar",
+      "scatter",
+      "histogram",
+      "box",
+      "heatmap",
+    ];
+    const first =
+      columns && kinds.map((k) => defaultSpec(k, columns)).find(Boolean);
     if (first) setSpec(first);
   }
   const engineReady = engineStatus?.state === "ready";
@@ -114,7 +164,7 @@ export function GraphikaApp() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-primary/[0.06] via-background to-background">
+    <div className="flex min-h-screen flex-col bg-linear-to-b from-primary/6 via-background to-background">
       <SiteHeader status={engineStatus} />
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 pb-16 sm:px-6">
         {!opened ? <Hero /> : <div className="h-2" />}
@@ -122,7 +172,11 @@ export function GraphikaApp() {
         <StepCard
           step={1}
           title="Your data"
-          description={opened ? opened.fileName : "CSV, TSV or Excel. Try a sample if you just want to look around."}
+          description={
+            opened
+              ? opened.fileName
+              : "CSV, TSV or Excel. Try a sample if you just want to look around."
+          }
           action={
             opened && (
               <Button variant="ghost" size="sm" onClick={resetFile}>
@@ -131,7 +185,13 @@ export function GraphikaApp() {
             )
           }
         >
-          {!opened && <DropZone onFile={loadUpload} onSample={loadSample} busy={loading} />}
+          {!opened && (
+            <DropZone
+              onFile={loadUpload}
+              onSample={loadSample}
+              busy={loading}
+            />
+          )}
           {error && (
             <Alert variant="destructive">
               <XCircle />
@@ -140,7 +200,12 @@ export function GraphikaApp() {
             </Alert>
           )}
           {opened && table && (
-            <DataPreview key={opened.fileName} table={table} options={options} onOptionsChange={setOptions} />
+            <DataPreview
+              key={opened.fileName}
+              table={table}
+              options={options}
+              onOptionsChange={setOptions}
+            />
           )}
         </StepCard>
 
@@ -193,7 +258,13 @@ export function GraphikaApp() {
                 <AlertDescription>{problem}</AlertDescription>
               </Alert>
             ) : (
-              <ChartPreview spec={spec} columns={typedColumns} look={look} size={previewSize} ready={engineReady} />
+              <ChartPreview
+                spec={spec}
+                columns={typedColumns}
+                look={look}
+                size={previewSize}
+                ready={engineReady}
+              />
             )}
           </StepCard>
         )}
@@ -204,12 +275,20 @@ export function GraphikaApp() {
             title="Labels & style"
             description="Leave a label empty to use the column name. These settings stay when you switch chart type."
           >
-            <StylePanel look={look} onChange={setLook} axes={spec.chart !== "heatmap"} />
+            <StylePanel
+              look={look}
+              onChange={setLook}
+              axes={spec.chart !== "heatmap"}
+            />
           </StepCard>
         )}
 
         {spec && !problem && typedColumns && table && (
-          <StepCard step={6} title="Size & download" description="The file is created on your device — nothing is uploaded.">
+          <StepCard
+            step={6}
+            title="Size & download"
+            description="The file is created on your device — nothing is uploaded."
+          >
             <ExportPanel
               settings={exportSettings}
               onChange={setExportSettings}
